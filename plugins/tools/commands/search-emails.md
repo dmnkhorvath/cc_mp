@@ -25,18 +25,31 @@ Examples of how to interpret arguments:
 - "budget full" → --search "budget" --full-body --format json
 
 Implementation approach for script location:
-1. First check if the script exists within the plugin at "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py"
-2. If not found, check marketplace installation at "$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts/read_emails.py"
-3. Use whichever path exists, or report error if neither exists
+1. First verify that `uv` command is available
+2. Check if the script exists within the plugin at "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py"
+3. If not found, check marketplace installation at "$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts/read_emails.py"
+4. Run `uv sync` to ensure dependencies are installed before executing
+5. Use whichever path exists, or report error if neither exists
 
 Example execution flow:
 ```bash
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "Error: 'uv' command not found."
+    echo "Please install uv from: https://docs.astral.sh/uv/getting-started/installation/"
+    echo ""
+    echo "Quick install: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
 # Check for script in plugin scripts directory (primary location)
 if [ -f "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py" ]; then
-    uv run python "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py" [options]
+    SCRIPT_DIR="$(dirname "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py")"
+    cd "$SCRIPT_DIR" && uv sync --quiet && uv run python "${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py" [options]
 # Check for script in Claude marketplace installation
 elif [ -f "$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts/read_emails.py" ]; then
-    uv run python "$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts/read_emails.py" [options]
+    SCRIPT_DIR="$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts"
+    cd "$SCRIPT_DIR" && uv sync --quiet && uv run python "$HOME/.claude/plugins/marketplaces/cc_mp/plugins/tools/scripts/read_emails.py" [options]
 else
     echo "Error: read_emails.py not found in expected locations:"
     echo "  - ${CLAUDE_PLUGIN_ROOT}/scripts/read_emails.py"
