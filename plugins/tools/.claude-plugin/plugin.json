@@ -1,0 +1,8 @@
+{
+  "name": "Tools",
+  "description": "Example plugin with custom commands",
+  "version": "1.0.0",
+  "author": {
+    "name": "Community"
+  }
+}
